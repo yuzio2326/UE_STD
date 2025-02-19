@@ -373,5 +373,4 @@ Intermediate
 Engine/Source/Programs/vcpkg
 Engine.sln
 SE.sln
-Engine/Content/Mesh
-Engine/Content/Textures
+Engine/Content

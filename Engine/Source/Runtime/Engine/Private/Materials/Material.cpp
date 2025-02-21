@@ -55,6 +55,7 @@ TEnginePtr<UMaterial> UMaterial::CreateMaterial(const FString& MaterialName,
 
 UMaterial::UMaterial()
 {
+#if !SERVER
 	if (HasAnyFlags(EObjectFlags::RF_ClassDefaultObject))
 	{
 		DefaultMaterial = CreateMaterial
@@ -120,6 +121,7 @@ UMaterial::UMaterial()
 
 	SetRasterizerState((ERasterizerState)RasterizerState);
 	TextureSampler = TStaticSamplerState<SF_Trilinear, AM_Wrap, AM_Wrap, AM_Wrap, 0, 16>::GetRHI();
+#endif
 }
 
 UMaterial::~UMaterial()
@@ -135,7 +137,9 @@ void UMaterial::PostInitProperties()
 {
 	Super::PostInitProperties();
 
+#if !SERVER
 	SetRasterizerState((ERasterizerState)RasterizerState);
+#endif
 }
 
 void UMaterial::SetVertexShader(FShader* InShader, FRHIVertexShader* InShaderRHI)

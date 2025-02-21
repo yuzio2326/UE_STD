@@ -157,6 +157,77 @@ void CMFCApplication::OnClosingMainFrame(CFrameImpl* pFrameImpl)
 void CMFCApplication::OnAppAbout()
 {
 }
+#elif CLIENT
+
+#include <windows.h>
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	}
+	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+int32 LAUNCH_API EnginePreInit(const TCHAR* CmdLine);
+int32 LAUNCH_API EngineInit(HWND hViewportWnd = NULL);
+
+void LAUNCH_API EngineTick();
+void LAUNCH_API EngineExit();
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WindowProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, TEXT("GameWindow"), NULL };
+	RegisterClassEx(&wc);
+	HWND hwnd = CreateWindow(wc.lpszClassName, TEXT("Simple Game Framework"), WS_OVERLAPPEDWINDOW, 100, 100, 800, 600, NULL, NULL, wc.hInstance, NULL);
+
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
+
+	int32 ErrorLevel = 0;
+	ErrorLevel = EnginePreInit(nullptr);
+	if (ErrorLevel != 0)
+	{
+		_ASSERT(false);
+		ExitProcess(0);
+	}
+
+	ErrorLevel = EngineInit(hwnd);
+	if (ErrorLevel != 0)
+	{
+		_ASSERT(false);
+		ExitProcess(0);
+	}
+
+	MSG msg;
+	bool running = true;
+	while (running)
+	{
+		// 비활성 상태에서는 PeekMessage를 사용하여 메시지 큐를 처리
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+			{
+				running = false;
+			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		// 여기서 게임 업데이트 및 렌더링 작업 수행
+		EngineTick();
+	}
+
+	EngineExit();
+
+	UnregisterClass(wc.lpszClassName, wc.hInstance);
+	return (int)msg.wParam;
+}
+
+
 #else
 int main()
 {

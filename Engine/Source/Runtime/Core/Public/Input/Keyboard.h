@@ -11,8 +11,13 @@
 #pragma once
 
 #include "PlatformHelpers.h"
+#if WITH_EDITOR
 #define DLLEXPORT __declspec(dllexport)
 #define DLLIMPORT __declspec(dllimport)
+#else
+#define DLLEXPORT
+#define DLLIMPORT
+#endif
 
 #if !defined(USING_XINPUT) && !defined(USING_GAMEINPUT) && !defined(USING_COREWINDOW)
 
@@ -63,6 +68,10 @@ namespace DirectX
         enum Keys : unsigned char
         {
             None = 0,
+
+            // 우리가 추가함
+            MouseX,
+            MouseY,
 
             Back = 0x8,
             Tab = 0x9,
@@ -240,10 +249,6 @@ namespace DirectX
 
             Pa1 = 0xfd,
             OemClear = 0xfe,
-
-            // 우리가 추가함
-            MouseX,
-            MouseY,
         };
 
         struct State

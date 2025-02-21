@@ -100,7 +100,9 @@ void UWorld::UpdateWorldComponents(FRegisterComponentContext* Context)
 
 void UWorld::InitWorld()
 {
+#if !SERVER
 	GetRendererModule().AllocateScene(this, ERHIFeatureLevel::SM5);
+#endif
 
 	WorldCreatedDelegate.Broadcast(this);
 }

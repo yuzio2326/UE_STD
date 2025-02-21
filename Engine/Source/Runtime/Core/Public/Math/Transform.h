@@ -91,7 +91,7 @@ public:
     FVector3D GetSafeScaleReciprocal(const FVector3D& InScale, float Tolerance = UE_SMALL_NUMBER) const;
 
     // Test if all components of the transforms are equal, within a tolerance.
-    FORCEINLINE bool Equals(const FTransform& Other, float Tolerance = UE_SMALL_NUMBER) const;
+    bool Equals(const FTransform& Other, float Tolerance = UE_SMALL_NUMBER) const;
 
     // See Unreal TTransform<T>::Multiply
     FTransform operator*(const FTransform& Other) const

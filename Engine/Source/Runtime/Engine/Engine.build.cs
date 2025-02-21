@@ -14,19 +14,11 @@ public class Engine : CommonProject
         base.ConfigureAll(conf, target);
         conf.AddPublicDependency<Core>(target);
         conf.AddPublicDependency<RenderCore>(target);
-        conf.AddPublicDependency<RHI>(target);
-        conf.AddPublicDependency<FBX>(target);
 
-        //conf.AddPublicDependency<Engine>(target);
-        //if (target.LaunchType == ELaunchType.Editor)
-        //{
-        //    conf.AddPublicDependency<RHI>(target);
-        //    conf.AddPublicDependency<Slate>(target);
-        //}
-        //conf.AddPublicDependency<EngineSettings>(target);
-        //if (target.LaunchType == ELaunchType.Editor)
-        //{
-        //    conf.AddPublicDependency<EngineEd>(target);
-        //}
+        if (target.LaunchType != ELaunchType.Server)
+        {
+            conf.AddPublicDependency<RHI>(target);
+            conf.AddPublicDependency<FBX>(target);
+        }
     }
 }

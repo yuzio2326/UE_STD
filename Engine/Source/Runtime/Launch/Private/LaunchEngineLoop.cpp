@@ -24,21 +24,26 @@ int32 FEngineLoop::PreInit(const TCHAR* CmdLine)
 		// LoadPreInitModules
 		{
 			FModuleManager::Get()->LoadModule(TEXT("Engine"));
+
+#if !SERVER
 			FModuleManager::Get()->LoadModule(TEXT("Renderer"));
-		}
 
-		RHIInit();
+			// LoadPreInitModules end
 
-		{
-			// Shader를 컴파일 한다
-			FShaderCompilingManager::Get();
-
+			RHIInit();
 			{
-				// 렌더링 모듈을 메인 스레드에 캐시하여 나중에 렌더링 스레드에서 안전하게 가져올 수 있도록 합니다.
-				// * 우리는 렌더 스레드는 없음. 위 설명은 언리얼 설명
-				GetRendererModule();
+				// Shader를 컴파일 한다
+				FShaderCompilingManager::Get();
+
+				{
+					// 렌더링 모듈을 메인 스레드에 캐시하여 나중에 렌더링 스레드에서 안전하게 가져올 수 있도록 합니다.
+					// * 우리는 렌더 스레드는 없음. 위 설명은 언리얼 설명
+					GetRendererModule();
+				}
 			}
+#endif
 		}
+
 	}
 
 #if WITH_EDITOR

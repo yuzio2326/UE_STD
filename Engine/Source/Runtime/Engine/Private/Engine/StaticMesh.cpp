@@ -61,9 +61,11 @@ UStaticMesh::UStaticMesh()
 
 void UStaticMesh::Create(const TArray<FMeshData>& NewMeshData)
 {
+#if !SERVER
 	RenderData.resize(NewMeshData.size());
 	for (uint32 i = 0; i < RenderData.size(); ++i)
 	{
 		RenderData[i].Create(this, NewMeshData[i]);
 	}
+#endif
 }

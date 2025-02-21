@@ -30,8 +30,10 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
+#if !SERVER
 protected:
 	fbxsdk::FbxScene* LoadFbxScene(fbxsdk::FbxManager* InFbxManager, const char* InFileName);
 
 	void ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
+#endif
 };

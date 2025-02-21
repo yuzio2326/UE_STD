@@ -11,8 +11,13 @@
 #pragma once
 
 #include "PlatformHelpers.h"
+#if WITH_EDITOR
 #define DLLEXPORT __declspec(dllexport)
 #define DLLIMPORT __declspec(dllimport)
+#else
+#define DLLEXPORT
+#define DLLIMPORT
+#endif
 
 #if !defined(USING_XINPUT) && !defined(USING_GAMEINPUT) && !defined(USING_COREWINDOW)
 

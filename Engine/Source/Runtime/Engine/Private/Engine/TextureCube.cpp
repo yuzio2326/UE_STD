@@ -9,8 +9,10 @@ UTextureCube::UTextureCube()
 		return;
 	}
 	
+#if !SERVER
 	FAssetManager::Get()->LoadAsset<UTextureCube>(FPaths::ContentDir() + L"/Engine/Textures/SunSubMixer_diffuseIBL.dds", UTextureCube::StaticClass()->GetName().c_str());
 	FAssetManager::Get()->LoadAsset<UTextureCube>(FPaths::ContentDir() + L"/Engine/Textures/SunSubMixer_specularIBL.dds", UTextureCube::StaticClass()->GetName().c_str());
+#endif
 }
 
 void UTextureCube::LoadTextureFromFile(const FString& InFilePath, const FString& InExtension)

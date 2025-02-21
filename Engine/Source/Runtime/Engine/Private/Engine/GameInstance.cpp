@@ -92,12 +92,12 @@ void UGameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer)
 	PlayWorld->BeginPlay();
 }
 
+#endif
+
 ULocalPlayer* UGameInstance::CreateInitialPlayer()
 {
 	return CreateLocalPlayer(false);
 }
-
-#endif
 
 ULocalPlayer* UGameInstance::CreateLocalPlayer(bool bSpawnPlayerController)
 {

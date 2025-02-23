@@ -1,5 +1,6 @@
 #include "Factories/FbxFactory.h"
 #include "Engine/StaticMesh.h"
+
 #if !SERVER
 #include "Fbx.h"
 #endif
@@ -45,11 +46,42 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 		return nullptr;	
 	}
 
+    //bone유무에 따른 static skeletalmesh 설정을 여기서 해야됌.
+    //skeletone 보유중인지 확인하는 코드
+    //if (Scene->GetRootNode()->GetNodeAttribute()->GetAttributeType() == fbxsdk::FbxNodeAttribute::eSkeleton)
+    //{
+    //      여기에 skeletalmesh를 생성하도록 ㄱㄱ
+    //}
+    //else 
+    // {
+    //      여기에 staticmesh를 생성하도록 ㄱㄱ
+    //}
+
+    // 
+    //근데 시간이 되긴 할까? 싶어서 일단 냅둠
+    /*
+    TObjectPtr<USkeletalmesh> NewStaticMesh;
+    // Mesh 정보를 얻어온다
+    {
+        TArray<FMeshData> MeshData;
+        ExtractFbx(Scene->GetRootNode(), MeshData);
+        //임시용 입니다 나중에 skeletal mesh를 만들면 거기에 마저 세팅을 해주세요
+        ExtractFbxAnim(Scene->GetRootNode(), MeshData);
+        Scene->Destroy();
+
+        NewStaticMesh = NewObject<USkeletalmesh>(nullptr, USkeletalmesh::StaticClass(), InName);
+        NewStaticMesh->Create(MeshData);
+    }
+    return NewStaticMesh;
+    */
+
 	TObjectPtr<UStaticMesh> NewStaticMesh;
 	// Mesh 정보를 얻어온다
 	{
 		TArray<FMeshData> MeshData;
 		ExtractFbx(Scene->GetRootNode(), MeshData);
+        //임시용 입니다 나중에 skeletal mesh를 만들면 거기에 마저 세팅을 해주세요
+        ExtractFbxAnim(Scene->GetRootNode(), MeshData);
 		Scene->Destroy();
 
 		NewStaticMesh = NewObject<UStaticMesh>(nullptr, UStaticMesh::StaticClass(), InName);
@@ -239,5 +271,49 @@ void UFbxFactory::ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMesh
     for (uint32 i = 0; i < InNode->GetChildCount(); ++i) {
         ExtractFbx(InNode->GetChild(i), OutMeshData);
     }
+}
+void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData)
+{
+    fbxsdk::FbxNodeAttribute* NodeAttribute = InNode->GetNodeAttribute();
+    if (NodeAttribute != nullptr)
+    {
+        fbxsdk::FbxNodeAttribute::EType AttributeType = NodeAttribute->GetAttributeType();
+
+        // Bone 유무 확인후 없으면 그냥 ㄱㄱ
+        if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
+        {
+            // Bone 정보 추출
+            fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
+
+            //bone의 이름을 가지고 옴
+            const FString BoneName = ANSI_TO_TCHAR(Skeleton->GetName());
+            E_LOG(Log, TEXT("ExtractFbxAnim BoneName: {}"), BoneName);
+
+            //하이어라키 만들고 거기 부모자식 관계 설정 시키기
+            Ready_HierarchyNodes(InNode, nullptr,0);
+
+        }
+    }
+
+}
+void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
+{
+    UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
+
+    if (pHierarchyNode != nullptr)
+    {
+        UHierarchyNodes.push_back(pHierarchyNode);
+        for (uint32 i = 0; i < InNode->GetChildCount(); ++i)
+        {
+            //재귀함수로 돌려서 자식 노드 끝가지 만들기
+            Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
+
+
+        }
+    }
+
+
+    
+
 }
 #endif

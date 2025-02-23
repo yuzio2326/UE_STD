@@ -14,6 +14,7 @@ AStaticMeshActor::AStaticMeshActor()
 	FAssetManager::Get()->LoadAsset<UStaticMesh>(FPaths::ContentDir() + L"/Engine/Mesh/SK_SMG11_X.FBX");
 	FAssetManager::Get()->LoadAsset<UStaticMesh>(FPaths::ContentDir() + L"/Engine/Mesh/SK_KA47_X.FBX");
 	FAssetManager::Get()->LoadAsset<UStaticMesh>(FPaths::ContentDir() + L"/Engine/Mesh/Sphere.FBX");
+	FAssetManager::Get()->LoadAsset<UStaticMesh>(FPaths::ContentDir() + L"/Engine/Mesh/Zombie_F.FBX");
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
 	StaticMeshComponent->SetStaticMesh(StaticMesh);

@@ -35,3 +35,7 @@
 #include "Templates/AlignmentTemplates.h"
 
 #include "Serialization/Archive.h"
+
+//#include <../Assimp/scene.h>
+//#include <../Assimp/Importer.hpp>
+//#include <../Assimp/postprocess.h>

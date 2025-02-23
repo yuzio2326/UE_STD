@@ -1195,3 +1195,41 @@ namespace EAxis
         Z,
     };
 }
+
+/* 만들어서 사용 하려니까 힘들다 ASSimp 사용 ㄱㄱ*/
+typedef struct tagKeyFrame
+{
+    float        fTime;
+
+    Vector3    vScale;
+    Vector4    vRotation;
+    Vector3    vPosition;
+}KEYFRAME;
+
+struct FNodeAnim
+{
+    FString NodeName;                      // 본(Bone) 이름
+    TArray<FVector> PositionKeys;           // 위치 키프레임
+    TArray<FQuat> RotationKeys;             // 회전 키프레임
+    TArray<FVector> ScaleKeys;              // 스케일 키프레임
+};
+
+struct aiVectorKey {
+    double mTime;      // 키프레임 시간 (초 단위)
+    Vector3 mValue; // 위치 또는 스케일 값 (X, Y, Z)
+};
+
+struct aiQuatKey 
+{
+    double mTime;     // 키프레임 시간 (초 단위)
+    FQuat mValue; // 회전 값 (쿼터니언)
+};
+
+struct aiAnimation 
+{
+    FString mName;                 // 애니메이션 이름
+    double mDuration;               // 애니메이션 길이 (초)
+    double mTicksPerSecond;         // 초당 틱 수
+    unsigned int mNumChannels;      // 애니메이션 채널(본) 개수
+    FNodeAnim** mChannels;         // 본(Bone) 애니메이션 배열
+};

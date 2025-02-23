@@ -15,6 +15,7 @@
 // Temp
 #include "Engine/StaticMeshActor.h"
 #include "Engine/DirectionalLight.h"
+#include "Engine/SkeletalMesh.h"
 
 FDelegate<UWorld*> WorldCreatedDelegate;
 FDelegate<UWorld*> WorldDestroyedDelegate;
@@ -68,6 +69,10 @@ void UWorld::InitalizeNewWorld()
 	FTransform TransformRight = FTransform(FRotator::ZeroRotator, FVector3D(200.f, 50.f, 0.f), FVector3D(1.f, 1.f, 1.f));
 	AStaticMeshActor* Actor = SpawnActor<AStaticMeshActor>(nullptr, TransformLeft, ActorSpawnParameters);
 	AStaticMeshActor* Actor2 = SpawnActor<AStaticMeshActor>(nullptr, TransformRight, ActorSpawnParameters);
+
+	FTransform SkeletalTransform = FTransform(FRotator(0.f, 90.f, 0.f), FVector3D(100.f, 0.f, -100.f), FVector3D(100.f, 100.f, 100.f));
+	AStaticMeshActor* AnimActor = SpawnActor<AStaticMeshActor>(nullptr, SkeletalTransform, ActorSpawnParameters);
+	
 
 	ADirectionalLight* DirectionalLight = SpawnActor<ADirectionalLight>();
 	DirectionalLight->SetLightColor(FLinearColor(0.5f, 0.5f, 0.5f));

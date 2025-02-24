@@ -1,6 +1,5 @@
 #pragma once
 #include "CoreMinimal.h"
-#include "D3D11Resources.h"
 #include "HierarchyNode.generated.h"
 //struct aiNode
 //{
@@ -20,6 +19,8 @@
 //	FBXNode* Parent = nullptr;
 //	TArray<FBXNode*> Children;
 //};
+//버그가 있어서 다시 만들어야 할수도 있음
+class UFbxFactory;
 
 
 UCLASS()
@@ -28,13 +29,13 @@ class UHierarchy : public UObject
 	GENERATED_BODY()
 	//월드 상에 존재해야 하니 일단 UObject 안에 박아놓고
 
-private:
+public:
 	UHierarchy();
 	virtual ~UHierarchy() = default;
 
 public:
-	const char* Get_Name() const {
-		return m_szName;
+	const FString Get_Name() const {
+		return m_FStringName;
 	}
 	unsigned int Get_Depth() const {
 		return m_iDepth;
@@ -55,25 +56,23 @@ public:
 	}
 
 public:
-	HRESULT Initialize(FName pAINodeName, FTransform mTransformation, class UHierarchy* pParent, unsigned int iDepth);
 	void Set_CombinedTransformation();
 	void Set_OffsetMatrix(FMatrix OffsetMatrix);
 
 private:
-	char			m_szName[MAX_PATH] = "";
+	//char			m_szName[MAX_PATH] = "";
+	FString			m_FStringName;
 	FMatrix			m_OffsetMatrix;
 	FMatrix			m_Transformation;
 	FMatrix			m_CombinedTransformation;
 	UHierarchy*		m_pParent = nullptr;
-	unsigned int	m_iDepth = 0;
+	uint32			m_iDepth = 0;
 
 	TObjectPtr<class UHierarchy> HierarchyNode;
 public:
-	static UHierarchy* Create(fbxsdk::FbxNode* InNode, class UHierarchy* pParent, unsigned int iDepth);
+	static UHierarchy* Create(fbxsdk::FbxNode* InNode, class UHierarchy* pParent, uint32 iDepth);
 
 	//create 및 init 관련 하나로 할거임
-	virtual void SetupHierarchy(fbxsdk::FbxNode* InNode, class UHierarchy* pParent, unsigned int iDepth);
-
-	virtual void Free();
+	//virtual void SetupHierarchy(fbxsdk::FbxNode* InNode, class UHierarchy* pParent, uint32 iDepth);
 
 };

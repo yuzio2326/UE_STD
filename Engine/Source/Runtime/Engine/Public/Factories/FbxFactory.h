@@ -1,7 +1,6 @@
 #pragma once
 #include "Factory.h"
 #include "RenderCore.h"
-#include "HierarchyNode.h"
 #include "FbxFactory.generated.h"
 
 namespace fbxsdk
@@ -25,6 +24,8 @@ struct FMeshData
 	TArray<FString> Bones;
 };
 
+//class UHierarchy;
+
 UCLASS()
 class UFbxFactory : public UFactory
 {
@@ -34,6 +35,10 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
+	class UHierarchy* Get_HierarchyNode(FString* pNodeName);
+
+
+
 #if !SERVER
 protected:
 	fbxsdk::FbxScene* LoadFbxScene(fbxsdk::FbxManager* InFbxManager, const char* InFileName);
@@ -41,6 +46,7 @@ protected:
 	void ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
+
 
 
 private:

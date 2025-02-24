@@ -1,37 +1,18 @@
 #include "HierarchyNode.h"
 #include <DirectXMath.h>
 
+
+#if !SERVER
+#include "Fbx.h"
+#endif
+
 UHierarchy::UHierarchy()
 {
 }
 
-HRESULT UHierarchy::Initialize(FName pAINodeName, FTransform mTransformation, class UHierarchy* pParent, unsigned int iDepth)
-{
-
-	/* 뼈 이름 보관. */
-	FString NodeNameString = pAINodeName.ToString();		//Name을 String으로 바꾸기
-	//	NodeNameString으로 나눈 각 문자를 static_cast로 casting해서 m_szName에 보관하기
-	for (int i = 0; i < NodeNameString.length() && i < MAX_PATH - 1; ++i)
-		m_szName[i] = static_cast<char>(NodeNameString[i]);
-
-	//나중에 m_szName로 일치하는 문자를 찾아서 행렬정보를 받아가지고 계속 갱신을 할 예정
 
 
-	/* 씬객체로 부터 행렬정보를 받아올때는 반드시 전치해서 받아와라. */
-	XMStoreFloat4x4(&m_OffsetMatrix, XMMatrixIdentity());	//DirectXMath로딩 하기
-	//XMMatrixIdentity가 인식이 될때가 있고 안될때가 있음 해당 문제의 원인은 나중에 찾기 ㄱㄱ
-
-	memcpy(&m_Transformation, &mTransformation, sizeof(FMatrix));
-	XMStoreFloat4x4(&m_Transformation, XMMatrixTranspose(XMLoadFloat4x4(&m_Transformation)));
-
-	m_iDepth = iDepth;
-	m_pParent = pParent;
-
-	XMStoreFloat4x4(&m_CombinedTransformation, XMMatrixIdentity());
-
-	return S_OK;
-}
-
+//애니메이션 재생시 사용할 예정입니다
 void UHierarchy::Set_CombinedTransformation()
 {
 	//부모가 있으면 자신의 행렬과 부모의 행렬을 곱해서 부모를 따라서 추가적으로 움직임을 부여
@@ -47,26 +28,51 @@ void UHierarchy::Set_OffsetMatrix(FMatrix OffsetMatrix)
 	XMStoreFloat4x4(&m_OffsetMatrix, OffsetMatrix);
 }
 
-UHierarchy* UHierarchy::Create(fbxsdk::FbxNode* InNode, UHierarchy* pParent, unsigned int iDepth)
-{
-	UHierarchy* pInstance = new UHierarchy();
-
-	//if (FAILED(pInstance->Initialize(pAINode, pParent, iDepth)))
-	//{
-	//	_ASSERT(TEXT("Failed To Created : CHierarchyNode"));
-	//}
-
-	return pInstance;
-}
-
-//Create지우고 대신 여기에 세팅중? 아니면 create에 만들까? 일단 적당히 
-void UHierarchy::SetupHierarchy(fbxsdk::FbxNode* InNode, UHierarchy* pParent, unsigned int iDepth)
+UHierarchy* UHierarchy::Create(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
 {
 
-	//if (HierarchyNode == NULL)
-	//{
-	//	HierarchyNode = NewObject<UHierarchy>(this, UHierarchy::StaticClass(), TEXT("Create_HierarchyNode"));
-	//	HierarchyNode->Initialize(pAINode->NodeName, pAINode->LocalTransform, pParent, iDepth);
-	//}
+	//node없으면 되돌리기
+	if (!InNode)
+	{
+		return nullptr;
+	}
 
+	UHierarchy* NewHierarchy = new UHierarchy();
+
+	//init 과정
+	{
+		//뼈이름 보관
+		NewHierarchy->m_FStringName= ANSI_TO_TCHAR(InNode->GetName());
+
+		//씬객체로부터 전치해서 받아올 예정
+		fbxsdk::FbxAMatrix IdentityMatrix;
+		IdentityMatrix.SetIdentity();
+		memcpy(&NewHierarchy->m_OffsetMatrix, &IdentityMatrix, sizeof(FbxAMatrix));
+		//XMStoreFloat4x4(&m_OffsetMatrix, XMMatrixIdentity());	같은 내용
+
+		fbxsdk::FbxAMatrix FbxTransform = InNode->EvaluateGlobalTransform();
+		memcpy(&NewHierarchy->m_Transformation, &FbxTransform, sizeof(FbxTransform));
+		
+		XMStoreFloat4x4(&NewHierarchy->m_Transformation, XMMatrixTranspose(XMLoadFloat4x4(&NewHierarchy->m_Transformation)));
+
+		NewHierarchy->m_pParent = pParent;
+		NewHierarchy->m_iDepth = iDepth;
+
+		memcpy(&NewHierarchy->m_CombinedTransformation, &IdentityMatrix, sizeof(FbxAMatrix));
+
+		//_ASSERT(TEXT("Failed To Created : CHierarchyNode"));
+	}
+
+	return NewHierarchy;
 }
+
+//Create지우고 대신 여기에 세팅중? 아니면 create에 만들까? 일단 적당히  
+// FbxFactory 에 만듦
+//void UHierarchy::SetupHierarchy(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
+//{
+//	//if (!InNode)
+//	//{
+//	//	return nullptr;
+//	//}
+//
+//}

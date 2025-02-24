@@ -2,8 +2,11 @@
 #include "Engine/StaticMesh.h"
 
 #include "HierarchyNode.h"
+#include "Animation.h"
+
 #if !SERVER
 #include "Fbx.h"
+#include "FbxFactory.h"
 #endif
 
 bool UFbxFactory::FactoryCanImport(const FString& Filename)
@@ -82,8 +85,14 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 	{
 		TArray<FMeshData> MeshData;
 		ExtractFbx(Scene->GetRootNode(), MeshData);
+
         //임시용 입니다 나중에 skeletal mesh를 만들면 거기에 마저 세팅을 해주세요
+        // ExtractFbx 내부에서 호출해도 ㄱㅊ은 부분입니다 임시적으로 해당 위치에 놓은겁니다
+        // 나중에 ExtractFbx내부에서 호출해서 돌리는게 좋을것 같음
         ExtractFbxAnim(Scene->GetRootNode(), MeshData);
+
+
+
 		Scene->Destroy();
 
 		NewStaticMesh = NewObject<UStaticMesh>(nullptr, UStaticMesh::StaticClass(), InName);
@@ -279,6 +288,13 @@ void UFbxFactory::ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMesh
 
                 const int MaterialCount = Mesh->GetElementMaterialCount();
                 // Material 생성 로직 추가 가능
+
+                //여기에 애니메이션 및 하이어라키 과정을 넣던지 밑에 여기에 있는 과정을 넣어서 한번에 생성하던지 둘중 하나를 할것 같음
+                // 한다면 위쪽에 만들어 놓음 bone유무를 가지고 먼저 세팅한다음 t/f 로 구별해서 추가 과정을 해야 하는게 더 나을지도?
+                //지금은 일단 고민중
+                /* Add ExtractFbxAnim or / add ExtractFbx code into ExtractFbxAnim*/
+
+
             }
         }
     }
@@ -287,9 +303,43 @@ void UFbxFactory::ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMesh
         ExtractFbx(InNode->GetChild(i), OutMeshData);
     }
 }
+
+void UFbxFactory::Ready_Animations(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData)
+{
+    // anim 꺼내올 대상이랑 받을 대상
+    // scene 이랑 meshdata 로 꺼내오고 받고 ㄱㄱ
+    uint32 OwnAnimStack = InNode->GetScene()->GetSrcObjectCount<fbxsdk::FbxAnimStack>();
+
+    for (uint32 i = 0; i < OwnAnimStack; ++i)
+    {
+        fbxsdk::FbxAnimStack* pAnimStack = InNode->GetScene()->GetSrcObject<fbxsdk::FbxAnimStack>(i);
+        if (!pAnimStack)
+            continue;
+
+        //Animation 생성하는 부분
+        // UAnimation 만들고 활성화 ㄱㄱ
+        UAnimation* pAnimation = UAnimation::Create(pAnimStack);
+        //if (nullptr == pAnimation)
+            //return;
+
+
+        //m_Animations.push_back(pAnimation);
+        
+    }
+
+
+
+
+
+}
+
+
 void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData)
 {
-    //위에 ExtractFbx에 넣을지 고민중
+    // Animation들어있는 Fbx가 여러개의 mesh를 가지고 있을 경우 load 오류가 걸림
+    // mesh container 만들면 해결되긴함.. 근데 시간이 있을지는 고민임...
+    // 일단 animation처리 끝내놓고 임시로 mesh 하나에 skeleton 들고있는 anim mesh fbx를 로드 시키고 나중에 mesh container 만들어서 로드 시키던지 해야할거 같음
+    // 위에 ExtractFbx에 넣을지 여기에 마저 처리할지 고민중
     fbxsdk::FbxNodeAttribute* NodeAttribute = InNode->GetNodeAttribute();
     if (NodeAttribute != nullptr)
     {

@@ -52,10 +52,7 @@ uint32 UAnimChannel::Update_Transformation(FLOAT fPlayTime, uint32 iCurrentKeyFr
 		XMStoreFloat3(&vScale, Vec3LerpScale);
 		XMStoreFloat4(&vRotation, Vec3LerpRotation);
 		XMStoreFloat3(&vPosition, Vec3LerpPosition);
-		//XMStoreFloat3(&vScale, XMVectorLerp(XMLoadFloat3(&vSourScale), XMLoadFloat3(&vDestScale), fRatio));
-		//XMStoreFloat4(&vRotation, XMQuaternionSlerp(XMLoadFloat4(&vSourRotation), XMLoadFloat4(&vDestRotation), fRatio));
-		//XMStoreFloat3(&vPosition, XMVectorLerp(XMLoadFloat3(&vSourPosition), XMLoadFloat3(&vDestPosition), fRatio));
-		//FVector3D::Transform
+
 	}
 
 	//XMMatrixAffineTransformation XMVectorSet XMVectorSetW 이 안됌...  

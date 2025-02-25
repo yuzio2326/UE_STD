@@ -1,5 +1,5 @@
 #include "Animation.h"
-#include "AnimChannel.h"
+#include "Factories/FbxFactory.h"
 
 #if !SERVER
 #include "Fbx.h"
@@ -66,4 +66,44 @@ UAnimation* UAnimation::Create(fbxsdk::FbxAnimStack* AnimStack, fbxsdk::FbxNode*
 	}
 
 	return nullptr;
+}
+
+void UAnimation::Init(UFbxFactory* pFbxFactory)
+{
+	for (uint32 i = 0; i < m_iNumChannels; ++i)
+	{
+		m_ChannelKeyFrames.push_back(0);
+
+		UHierarchy* pNode = pFbxFactory->Get_HierarchyNode(m_Channels[i]->GetName());
+
+		if (pNode != nullptr)
+			m_HierarchyNodes.push_back(pNode);
+	}
+
+}
+
+void UAnimation::PlayAnimation(FLOAT fTimeDelta)
+{
+	m_fPlayTime += m_fTickPerSecond * fTimeDelta;
+
+	if (m_fPlayTime >= m_Duration)
+	{
+		m_fPlayTime = 0.f;
+
+		for (auto& pChannel : m_Channels)
+		{
+			for (auto& iCurrentKeyFrame : m_ChannelKeyFrames)
+				iCurrentKeyFrame = 0;
+		}
+	}
+
+	uint32		iChannelIndex = 0;
+
+	for (auto& pChannel : m_Channels)
+	{
+		m_ChannelKeyFrames[iChannelIndex] = pChannel->Update_Transformation(m_fPlayTime, m_ChannelKeyFrames[iChannelIndex], m_HierarchyNodes[iChannelIndex]);
+
+		++iChannelIndex;
+	}
+
 }

@@ -42,7 +42,7 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
-	class UHierarchy* Get_HierarchyNode(FString* pNodeName);
+	class UHierarchy* Get_HierarchyNode(FString pNodeName);
 
 
 

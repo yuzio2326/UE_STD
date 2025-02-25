@@ -6,7 +6,6 @@
 
 #if !SERVER
 #include "Fbx.h"
-#include "FbxFactory.h"
 #endif
 
 bool UFbxFactory::FactoryCanImport(const FString& Filename)
@@ -104,11 +103,11 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 #endif
 }
 
-UHierarchy* UFbxFactory::Get_HierarchyNode(FString* pNodeName)
+UHierarchy* UFbxFactory::Get_HierarchyNode(FString pNodeName)
 {
     auto	iter = find_if(UHierarchyNodes.begin(), UHierarchyNodes.end(), [&](UHierarchy* pNode)
         {
-            return pNode->GetName().compare(*pNodeName);
+            return pNode->GetName().compare(pNodeName);
         });
 
     if (iter == UHierarchyNodes.end())
@@ -293,8 +292,11 @@ void UFbxFactory::ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMesh
                 // 한다면 위쪽에 만들어 놓음 bone유무를 가지고 먼저 세팅한다음 t/f 로 구별해서 추가 과정을 해야 하는게 더 나을지도?
                 //지금은 일단 고민중
                 /* Add ExtractFbxAnim or / add ExtractFbx code into ExtractFbxAnim*/
+                
+                // anim 준비 과정을 한 이쯤에서 재생 시키도록 해야하구
+                //Ready_Animations();
 
-
+                //playAnim을 계속 호출할 skeletal mesh가 필요함
             }
         }
     }

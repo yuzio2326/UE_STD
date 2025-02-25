@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AnimChannel.h"
 #include "Animation.generated.h"
 
 
@@ -27,7 +28,7 @@ public:
 	FLOAT						m_fPlayTime = 0.f;
 
 private:  /* 복제된 애니메이션 마다 따로 가진다. */
-	vector<class CHierarchyNode*>	m_HierarchyNodes;
+	vector<class UHierarchy*>	m_HierarchyNodes;
 	vector<uint32>					m_ChannelKeyFrames;
 
 public:

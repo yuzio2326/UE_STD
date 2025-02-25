@@ -8,7 +8,7 @@ class UFbxFactory;
 
 
 UCLASS()
-class ENGINE_API UAnimChannel : public UObject
+class UAnimChannel : public UObject
 {
 	GENERATED_BODY()
 public:

@@ -8,6 +8,7 @@ namespace fbxsdk
 	class FbxScene;
 	class FbxManager;
 	class FbxNode;
+	//class FbxAnimStack;
 }
 //class fbxsdk::FbxScene;
 //class fbxsdk::FbxManager;

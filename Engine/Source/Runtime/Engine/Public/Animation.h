@@ -16,7 +16,7 @@ public:
 
 	/* 이 애니메이션을 구동하기위해 사용되는 뼈의 갯수. */
 	uint32						m_iNumChannels = 0;
-	vector<class CChannel*>		m_Channels; 
+	vector<class UAnimChannel*>		m_Channels;
 
 	/* 애니메이션 재생하는데 걸리는 전체시간. */
 	double						m_Duration;
@@ -31,7 +31,8 @@ private:  /* 복제된 애니메이션 마다 따로 가진다. */
 	vector<uint32>					m_ChannelKeyFrames;
 
 public:
-	static UAnimation* Create(FbxAnimStack * AnimStack);
+	static UAnimation* Create(fbxsdk::FbxAnimStack * AnimStack, fbxsdk::FbxNode* InNode);
+	virtual void Init(class UFbxFactory* pFbxFactory);
 	virtual void PlayAnimation(FLOAT fTimeDelta);
 
 };

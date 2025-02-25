@@ -24,6 +24,8 @@ public:
     FMatrix ToMatrixNoScale() const;
     FMatrix ToRotationMatrix() const;
 
+    
+
     FVector3D TransformVectorNoScale(const FVector3D& V) const
     {
         FVector3D RotatedVec = FVector3D::Transform(V, GetRotationMatrix());

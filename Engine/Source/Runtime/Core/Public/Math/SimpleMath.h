@@ -322,6 +322,8 @@ namespace DirectX
             static Vector3 TransformNormal(const Vector3& v, const Matrix& m) noexcept;
             static void TransformNormal(_In_reads_(count) const Vector3* varray, size_t count, const Matrix& m, _Out_writes_(count) Vector3* resultArray) noexcept;
 
+
+
             // Constants
             CORE_API static const Vector3 Zero;
             CORE_API static const Vector3 One;
@@ -1233,3 +1235,6 @@ struct aiAnimation
     unsigned int mNumChannels;      // 애니메이션 채널(본) 개수
     FNodeAnim** mChannels;         // 본(Bone) 애니메이션 배열
 };
+
+
+

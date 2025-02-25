@@ -317,8 +317,12 @@ void UFbxFactory::Ready_Animations(fbxsdk::FbxNode* InNode, TArray<FMeshData>& O
             continue;
 
         //Animation 생성하는 부분
+        //둘중에 하나로 만들기
         // UAnimation 만들고 활성화 ㄱㄱ
-        UAnimation* pAnimation = UAnimation::Create(pAnimStack);
+        UAnimation* pAnimation = UAnimation::Create(pAnimStack, InNode);
+        //TObjectPtr<UAnimation> InstanceAnimation = NewObject<UAnimation>(nullptr, StaticClass, UAnimation::StaticClass());
+        //LevelToSpawnIn->Actors.push_back(Actor);
+
         //if (nullptr == pAnimation)
             //return;
 

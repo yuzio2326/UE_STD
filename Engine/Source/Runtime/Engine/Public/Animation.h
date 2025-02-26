@@ -2,13 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "AnimChannel.h"
+#include "Factories/FbxFactory.h"
 #include "Animation.generated.h"
 
 
-class UFbxFactory;
+//class UFbxFactory;
 
 UCLASS()
-class ENGINE_API UAnimation : public UObject
+class UAnimation : public UObject
 {
 	GENERATED_BODY()
 

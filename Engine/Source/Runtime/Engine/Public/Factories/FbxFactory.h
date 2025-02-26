@@ -21,11 +21,17 @@ struct FMeshData
 
 	uint32 NumPrimitives = 0;
 
-	bool OwnedBone = false;
-	TArray<FString> Bones;
+	//bool OwnedBone = false;
+	//TArray<FString> Bones;
 
-	//0개면 하나도 없다는 소리임 0번째 관련이 아니라
-	uint32 OwnAnimations = 0;
+	//뼈
+	vector<class UHierarchy*>	Bones;
+	uint32 BoneNumber = 0;
+
+	//Animation
+	vector<class UAnimation*>			m_Animations;
+	uint32								m_iCurrentAnimIndex = 0;
+	uint32								m_iNumAnimations = 0;
 
 
 
@@ -42,7 +48,7 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
-	class UHierarchy* Get_HierarchyNode(FString pNodeName);
+	class UHierarchy* Get_HierarchyNode(FString NodeName);
 
 
 
@@ -53,8 +59,8 @@ protected:
 	void ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);//Scene 도 넣어서 하는게 ㄱㅊ을거 같아보임 나중에 ㄱㄱ
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
-
-	void Ready_Animations(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
+	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData);
+	void Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData);
 
 private:
 	vector<class UHierarchy*>			UHierarchyNodes;

@@ -1,5 +1,5 @@
 #include "Animation.h"
-#include "Factories/FbxFactory.h"
+
 
 #if !SERVER
 #include "Fbx.h"
@@ -10,7 +10,9 @@ UAnimation::UAnimation()
 
 }
 
+//UAnimation* UAnimation::Create(fbxsdk::FbxAnimStack* AnimStack, fbxsdk::FbxNode* InNode)
 UAnimation* UAnimation::Create(fbxsdk::FbxAnimStack* AnimStack, fbxsdk::FbxNode* InNode)
+
 {
 	UAnimation* InstanceAnimation = new UAnimation();
 	//TObjectPtr<UAnimation> InstanceAnimation = NewObject<UAnimation>(LevelToSpawnIn, Class, NewActorName, ActorFlags, Template);
@@ -65,7 +67,7 @@ UAnimation* UAnimation::Create(fbxsdk::FbxAnimStack* AnimStack, fbxsdk::FbxNode*
 
 	}
 
-	return nullptr;
+	return InstanceAnimation;
 }
 
 void UAnimation::Init(UFbxFactory* pFbxFactory)

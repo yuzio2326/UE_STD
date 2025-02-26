@@ -351,6 +351,46 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
     if (NodeAttribute != nullptr) {
         fbxsdk::FbxNodeAttribute::EType AttributeType = NodeAttribute->GetAttributeType();
 
+        FMeshData& NewMeshData = OutMeshData.emplace_back();
+
+        //skeleton
+        if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
+        {
+            // 일단 animation처리 끝내놓고 임시로 mesh 하나에 skeleton 들고있는 anim mesh fbx를 로드 시키고 나중에 mesh container 만들어서 로드 시키던지 해야할거 같음
+               // 위에 ExtractFbx에 넣을지 여기에 마저 처리할지 고민중
+
+               // skeleton 유무 확인 이후 Create skeleton 및 anima setting
+            if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
+            {
+                // Bone 정보 추출
+                fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
+
+                //bone의 이름을 가지고 옴R
+                const FString BoneName = ANSI_TO_TCHAR(Skeleton->GetName());
+                E_LOG(Log, TEXT("ExtractFbxAnim BoneName: {}"), BoneName);
+
+                //하이어라키 만들고 거기 부모자식 관계 설정 시키기
+                uint32  iDepth = 0;
+                UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, nullptr, iDepth++);
+                {
+                    if (pHierarchyNode != nullptr)
+                    {
+                        UHierarchyNodes.push_back(pHierarchyNode);
+                        for (uint32 i = 0; i < InNode->GetChildCount(); ++i)
+                        {
+                            //재귀함수로 돌려서 자식 노드 끝가지 만들기
+                            Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
+                        }
+                    }
+                }
+
+                //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
+
+                SetUp_HierarchyNodes(InNode, NewMeshData);
+                Ready_Animations(InNode, NewMeshData);
+            }
+        }
+
         //mesh
         if (AttributeType == fbxsdk::FbxNodeAttribute::eMesh) {
             const FString FbxNodeName = ANSI_TO_TCHAR(InNode->GetName());
@@ -474,45 +514,13 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
             }
 
             if (bSuccessed) {
-                FMeshData& NewMeshData = OutMeshData.emplace_back();
+                
                 NewMeshData.Name = FbxNodeName;
                 NewMeshData.Vertices = move(Vertices);
                 NewMeshData.Indices = move(Indices);
                 NewMeshData.NumPrimitives = PolygonCount;
                 
-                // 일단 animation처리 끝내놓고 임시로 mesh 하나에 skeleton 들고있는 anim mesh fbx를 로드 시키고 나중에 mesh container 만들어서 로드 시키던지 해야할거 같음
-                // 위에 ExtractFbx에 넣을지 여기에 마저 처리할지 고민중
-                
-                // skeleton 유무 확인 이후 Create skeleton 및 anima setting
-                if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
-                {
-                    // Bone 정보 추출
-                    fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
-
-                    //bone의 이름을 가지고 옴R
-                    const FString BoneName = ANSI_TO_TCHAR(Skeleton->GetName());
-                    E_LOG(Log, TEXT("ExtractFbxAnim BoneName: {}"), BoneName);
-
-                    //하이어라키 만들고 거기 부모자식 관계 설정 시키기
-                    uint32  iDepth = 0;
-                    UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, nullptr, iDepth++);
-                    {
-                        if (pHierarchyNode != nullptr)
-                        {
-                            UHierarchyNodes.push_back(pHierarchyNode);
-                            for (uint32 i = 0; i < InNode->GetChildCount(); ++i)
-                            {
-                                //재귀함수로 돌려서 자식 노드 끝가지 만들기
-                                Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
-                            }
-                        }
-                    }
-
-                    //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
-
-                    SetUp_HierarchyNodes(InNode, NewMeshData);
-                    Ready_Animations(InNode, NewMeshData);
-                }
+               
 
                 const int MaterialCount = Mesh->GetElementMaterialCount();
 
@@ -527,6 +535,8 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 //playAnim을 계속 호출할 skeletal mesh가 필요함
             }
         }
+
+
     }
 
     for (uint32 i = 0; i < InNode->GetChildCount(); ++i) {

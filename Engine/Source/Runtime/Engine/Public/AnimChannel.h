@@ -4,7 +4,15 @@
 #include "AnimChannel.generated.h"
 
 class UFbxFactory;
-
+namespace fbxsdk
+{
+    class FbxScene;
+    class FbxManager;
+    class FbxNode;
+    class FbxAnimStack;
+    class FbxAnimLayer;
+    //class FbxMesh;
+}
 
 
 UCLASS()

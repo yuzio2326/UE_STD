@@ -8,8 +8,11 @@ namespace fbxsdk
 	class FbxScene;
 	class FbxManager;
 	class FbxNode;
-	//class FbxAnimStack;
+	class FbxAnimStack;
+	class FbxAnimLayer;
+	class FbxMesh;
 }
+
 //class fbxsdk::FbxScene;
 //class fbxsdk::FbxManager;
 
@@ -64,6 +67,11 @@ protected:
 
 private:
 	vector<class UHierarchy*>			UHierarchyNodes;
+	FString								NodeName;
+	TArray<FPositionNormalUV>			m_Vertice;
+	TArray<uint32>						m_Indices;
+	uint32								m_NumPrimitives = 0;
+	fbxsdk::FbxMesh*					m_Mesh;
 
 
 #endif

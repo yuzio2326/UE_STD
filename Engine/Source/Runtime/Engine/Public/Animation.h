@@ -5,6 +5,15 @@
 #include "Factories/FbxFactory.h"
 #include "Animation.generated.h"
 
+namespace fbxsdk
+{
+	class FbxScene;
+	class FbxManager;
+	class FbxNode;
+	class FbxAnimStack;
+	class FbxAnimLayer;
+	//class FbxMesh;
+}
 
 //class UFbxFactory;
 

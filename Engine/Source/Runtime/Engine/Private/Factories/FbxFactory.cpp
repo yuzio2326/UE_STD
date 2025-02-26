@@ -81,9 +81,10 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 	// Mesh 정보를 얻어온다
 	{
 		TArray<FMeshData> MeshData;
-		ExtractFbx(Scene->GetRootNode(), MeshData);
+		//ExtractFbx(Scene->GetRootNode(), MeshData);
         //임시용 입니다 나중에 skeletal mesh를 만들면 거기에 마저 세팅을 해주세요
         ExtractFbxAnim(Scene->GetRootNode(), MeshData);
+
 		Scene->Destroy();
 
 		NewStaticMesh = NewObject<UStaticMesh>(nullptr, UStaticMesh::StaticClass(), InName);
@@ -95,11 +96,11 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 #endif
 }
 
-UHierarchy* UFbxFactory::Get_HierarchyNode(FString* pNodeName)
+UHierarchy* UFbxFactory::Get_HierarchyNode(FString pNodeName)
 {
     auto	iter = find_if(UHierarchyNodes.begin(), UHierarchyNodes.end(), [&](UHierarchy* pNode)
         {
-            return pNode->GetName().compare(*pNodeName);
+            return pNode->GetName().compare(pNodeName);
         });
 
     if (iter == UHierarchyNodes.end())
@@ -289,49 +290,294 @@ void UFbxFactory::ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMesh
 }
 void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData)
 {
-    //위에 ExtractFbx에 넣을지 고민중
+    // Animation들어있는 Fbx가 여러개의 mesh를 가지고 있을 경우 load 오류가 걸림
+   // mesh container 만들면 해결되긴함.. 근데 시간이 있을지는 고민임...
+
+   //ExtractFbx 부분 가지고와서 사용
     fbxsdk::FbxNodeAttribute* NodeAttribute = InNode->GetNodeAttribute();
-    if (NodeAttribute != nullptr)
-    {
+    if (NodeAttribute != nullptr) {
         fbxsdk::FbxNodeAttribute::EType AttributeType = NodeAttribute->GetAttributeType();
 
-        // Bone 유무 확인후 없으면 그냥 ㄱㄱ 
+        FMeshData& NewMeshData = OutMeshData.emplace_back();
+
+        //skeleton
         if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
         {
-            // Bone 정보 추출
-            fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
+            // 일단 animation처리 끝내놓고 임시로 mesh 하나에 skeleton 들고있는 anim mesh fbx를 로드 시키고 나중에 mesh container 만들어서 로드 시키던지 해야할거 같음
+               // 위에 ExtractFbx에 넣을지 여기에 마저 처리할지 고민중
 
-            //bone의 이름을 가지고 옴
-            const FString BoneName = ANSI_TO_TCHAR(Skeleton->GetName());
-            E_LOG(Log, TEXT("ExtractFbxAnim BoneName: {}"), BoneName);
+               // skeleton 유무 확인 이후 Create skeleton 및 anima setting
+            if (m_SetBones == false)
+            {
+                m_SetBones = true;
+                // Bone 정보 추출
+                fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
 
-            //하이어라키 만들고 거기 부모자식 관계 설정 시키기
-            Ready_HierarchyNodes(InNode, nullptr,0);
+                //bone의 이름을 가지고 옴R
+                const FString BoneName = ANSI_TO_TCHAR(Skeleton->GetName());
+                E_LOG(Log, TEXT("ExtractFbxAnim BoneName: {}"), BoneName);
 
-            //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
+                //하이어라키 만들고 거기 부모자식 관계 설정 시키기
+                uint32  iDepth = 0;
+                //UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, nullptr, iDepth++);
 
+                //뼈세팅
+                Ready_HierarchyNodes(InNode, nullptr, iDepth);
+
+
+                //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
+
+                SetUp_HierarchyNodes(InNode, NewMeshData);
+                Ready_Animations(InNode, NewMeshData);
+            }
         }
+
+        //mesh
+        if (AttributeType == fbxsdk::FbxNodeAttribute::eMesh) {
+            const FString FbxNodeName = ANSI_TO_TCHAR(InNode->GetName());
+            E_LOG(Log, TEXT("ExtractFbx Mesh: {}"), FbxNodeName);
+
+            fbxsdk::FbxMesh* Mesh = static_cast<fbxsdk::FbxMesh*>(NodeAttribute);
+            _ASSERT(Mesh);
+            fbxsdk::FbxLayer* BaseLayer = Mesh->GetLayer(0);
+            if (BaseLayer == nullptr) {
+                E_LOG(Error, TEXT("BaseLayer is nullptr!"));
+                return;
+            }
+
+            bool bSuccessed = true;
+
+            const int32 PolygonCount = Mesh->GetPolygonCount();
+            const int32 VertexCount = Mesh->GetControlPointsCount();
+
+            // Vertices, Normals 및 UVs 추출
+            TArray<FPositionNormalUV> Vertices;
+            TArray<uint32> Indices;
+            Vertices.reserve(PolygonCount); // 적당히 공간 할당
+            std::map<int32, TArray<int32>> VertexMap; // 같은 위치의 정점을 추적하기 위한 맵
+
+            {
+                fbxsdk::FbxVector4* FbxVertices = Mesh->GetControlPoints();
+
+                // Position 정보 추출
+                for (uint32 i = 0; i < VertexCount; ++i) {
+                    FVector3D Position = FVector3D(FbxVertices[i][0], -FbxVertices[i][1], FbxVertices[i][2]);
+                    Vertices.emplace_back(Position, FVector3D::Zero);
+
+                    // 같은 위치의 정점을 저장
+                    if (!VertexMap.contains(i)) {
+                        VertexMap.emplace(i, TArray<int32>());
+                    }
+                    VertexMap[i].push_back(Vertices.size() - 1);
+                }
+
+                if (BaseLayer->GetNormals() == nullptr) {
+                    Mesh->InitNormals();
+                    Mesh->GenerateNormals();
+                }
+
+                fbxsdk::FbxGeometryElementNormal* LayerElementNormal = Mesh->GetElementNormal();
+                fbxsdk::FbxLayerElement::EMappingMode NormalMappingMode = LayerElementNormal->GetMappingMode();
+                fbxsdk::FbxLayerElement::EReferenceMode NormalReferenceMode = LayerElementNormal->GetReferenceMode();
+
+                fbxsdk::FbxGeometryElementUV* LayerElementUV = Mesh->GetElementUV(0);
+                fbxsdk::FbxLayerElement::EMappingMode UVMappingMode = LayerElementUV->GetMappingMode();
+                fbxsdk::FbxLayerElement::EReferenceMode UVReferenceMode = LayerElementUV->GetReferenceMode();
+
+                //vertex index buffer
+                int32 CurrentVertexInstanceIndex = 0;
+                for (int32 PolygonIndex = 0; PolygonIndex < PolygonCount; ++PolygonIndex) {
+                    const int32 PolygonVertexCount = Mesh->GetPolygonSize(PolygonIndex);
+                    if (PolygonVertexCount != 3) {
+                        E_LOG(Warning, TEXT("PolygonVertexCount({}) != 3"), PolygonVertexCount);
+                        return;
+                    }
+
+                    for (int32 CornerIndex = 0; CornerIndex < PolygonVertexCount; ++CornerIndex) {
+                        const int32 ControlPointIndex = Mesh->GetPolygonVertex(PolygonIndex, CornerIndex);
+                        int32 RealFbxVertexIndex = CurrentVertexInstanceIndex + CornerIndex;
+
+                        int32 NormalMapIndex = (NormalMappingMode == FbxLayerElement::eByControlPoint) ?
+                            ControlPointIndex : RealFbxVertexIndex;
+                        int32 NormalValueIndex = (NormalReferenceMode == FbxLayerElement::eDirect) ?
+                            NormalMapIndex : LayerElementNormal->GetIndexArray().GetAt(NormalMapIndex);
+
+                        FbxVector4 TempValue = LayerElementNormal->GetDirectArray().GetAt(NormalValueIndex);
+                        FVector3D Normal = FVector3D(TempValue[0], -TempValue[1], TempValue[2]);
+
+                        // UV 좌표 추출
+                        int32 UVMapIndex = (UVMappingMode == FbxLayerElement::eByControlPoint) ?
+                            ControlPointIndex : RealFbxVertexIndex;
+                        int32 UVIndex = (UVReferenceMode == FbxLayerElement::eDirect) ?
+                            UVMapIndex : LayerElementUV->GetIndexArray().GetAt(UVMapIndex);
+
+                        FbxVector2 UVValue = LayerElementUV->GetDirectArray().GetAt(UVIndex);
+                        FVector2D UV = FVector2D(UVValue[0], 1.0 - UVValue[1]); // flip the Y of UVs for DirectX
+
+                        // 중복된 위치의 정점을 처리하여 각각의 노멀과 UV를 할당
+                        bool bFound = false;
+                        for (int32 VertexIndex : VertexMap[ControlPointIndex]) {
+                            if (
+                                (
+                                    Vertices[VertexIndex].Normal == FVector3D::Zero ||
+                                    Vertices[VertexIndex].Normal == Normal
+                                    ) &&
+                                (
+                                    Vertices[VertexIndex].UV == FVector2D::Zero ||
+                                    Vertices[VertexIndex].UV == UV)
+                                )
+                            {
+                                RealFbxVertexIndex = VertexIndex;
+                                bFound = true;
+                                break;
+                            }
+                        }
+
+                        // Normal이나 UV가 다르면 신규 정점 생성
+                        if (!bFound) {
+                            FPositionNormalUV NewVertex = Vertices[ControlPointIndex];
+                            NewVertex.Normal = Normal;
+                            NewVertex.UV = UV;
+                            Vertices.push_back(NewVertex);
+                            RealFbxVertexIndex = Vertices.size() - 1;
+                            VertexMap[ControlPointIndex].push_back(RealFbxVertexIndex);
+                        }
+
+                        Vertices[RealFbxVertexIndex].Normal = Normal;
+                        Vertices[RealFbxVertexIndex].UV = UV;
+
+                        Indices.push_back(RealFbxVertexIndex);
+                    }
+                    CurrentVertexInstanceIndex += PolygonVertexCount;
+                }
+
+            }
+
+            if (bSuccessed) {
+
+                NewMeshData.Name = FbxNodeName;
+                NewMeshData.Vertices = move(Vertices);
+                NewMeshData.Indices = move(Indices);
+                NewMeshData.NumPrimitives = PolygonCount;
+
+                const int MaterialCount = Mesh->GetElementMaterialCount();
+
+                //여기에 애니메이션 및 하이어라키 과정을 넣던지 밑에 여기에 있는 과정을 넣어서 한번에 생성하던지 둘중 하나를 할것 같음
+                // 한다면 위쪽에 만들어 놓음 bone유무를 가지고 먼저 세팅한다음 t/f 로 구별해서 추가 과정을 해야 하는게 더 나을지도?
+                //지금은 일단 고민중
+                /* Add ExtractFbxAnim or / add ExtractFbx code into ExtractFbxAnim*/
+
+                // anim 준비 과정을 한 이쯤에서 재생 시키도록 해야하구
+                //Ready_Animations();
+
+                //playAnim을 계속 호출할 skeletal mesh가 필요함
+            }
+        }
+
     }
+
+    //해당 부분 때문에 재귀함수에 2번 들어옴
+    for (uint32 i = 0; i < InNode->GetChildCount(); ++i) 
+    {
+        uint32 ChildCount = InNode->GetChildCount();
+        ExtractFbxAnim(InNode->GetChild(i), OutMeshData);
+    }
+
+
 
 }
 void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
 {
     UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
 
+    //2중순환 구조 문제가 있음
+
     if (pHierarchyNode != nullptr)
     {
         UHierarchyNodes.push_back(pHierarchyNode);
-        for (uint32 i = 0; i < InNode->GetChildCount(); ++i)
+
+        FString HierarchyName= pHierarchyNode->Get_Name();
+
+        uint32 ChildHierarchyNode = InNode->GetChildCount();
+
+        if (ChildHierarchyNode > 0)
         {
-            //재귀함수로 돌려서 자식 노드 끝가지 만들기
-            Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
-
-
+            for (uint32 i = 0; i < ChildHierarchyNode; ++i)
+            {
+                //재귀함수로 돌려서 자식 노드 끝가지 만들기
+                Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
+            }
         }
     }
 
+}
+void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData)
+{
+    uint32 OwnBoneNum = MeshData.BoneNumber;
 
-    
+    FbxMesh* Mesh = InNode->GetMesh();
+    if (!Mesh) return;
+
+    FbxSkin* Skin = static_cast<FbxSkin*>(Mesh->GetDeformer(0, FbxDeformer::eSkin));
+    if (!Skin) return;
+
+
+    // 메시에 영향을 주는 뼈들을 순회 하고
+    for (uint32 i = 0; i < OwnBoneNum; ++i)
+    {
+        //뼈를 가지고오고
+        //aiBone* pAIBone = MeshData.Bones[i];
+
+        //뼈이름 가져오기
+        //UHierarchy* pHierarchyNode = Get_HierarchyNode(pAIBone->mName.data);
+
+        FbxCluster* Cluster = Skin->GetCluster(i);
+        FbxNode* BoneNode = Cluster->GetLink();
+        const FString BoneName = ANSI_TO_TCHAR(BoneNode->GetName());
+
+        UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
+
+
+        //FMatrix			OffsetMatrix;
+        //memcpy(&OffsetMatrix, &pAIBone->mOffsetMatrix, sizeof(FMatrix));
+
+        // Offset Matrix 변환     FBX는 변환 행렬을 직접 가져와야 함  ㅈㄴ 귀찮네
+        FbxAMatrix fbxOffsetMatrix;
+        Cluster->GetTransformLinkMatrix(fbxOffsetMatrix);
+
+        // FBX 행렬을 Unreal FMatrix로 변환
+        FMatrix OffsetMatrix;
+        for (int r = 0; r < 4; r++)
+            for (int c = 0; c < 4; c++)
+                OffsetMatrix.m[r][c] = static_cast<float>(fbxOffsetMatrix[r][c]);
+
+
+        //뼈 세팅한뒤 매쉬에도 세팅
+        pHierarchyNode->Set_OffsetMatrix(XMMatrixTranspose(XMLoadFloat4x4(&OffsetMatrix)));
+
+        MeshData.Bones.push_back(pHierarchyNode);
+
+    }
+
+    if (0 == OwnBoneNum)
+    {
+
+        UHierarchy* pNode = Get_HierarchyNode(MeshData.Name);
+        if (nullptr == pNode)
+            return;
+
+        OwnBoneNum = 1;
+
+        MeshData.Bones.push_back(pNode);
+    }
 
 }
+
+void UFbxFactory::Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData)
+{
+    //임시 설정 X상태입니다
+
+
+}
+
 #endif

@@ -8,6 +8,7 @@ namespace fbxsdk
 	class FbxScene;
 	class FbxManager;
 	class FbxNode;
+	class FbxMesh;
 }
 //class fbxsdk::FbxScene;
 //class fbxsdk::FbxManager;
@@ -20,8 +21,11 @@ struct FMeshData
 
 	uint32 NumPrimitives = 0;
 
-	bool OwnedBone = false;
-	TArray<FString> Bones;
+	//bool OwnedBone = false;
+	//TArray<FString> Bones;
+	//뼈
+	vector<class UHierarchy*>	Bones;
+	uint32 BoneNumber = 0;
 };
 
 //class UHierarchy;
@@ -35,7 +39,7 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
-	class UHierarchy* Get_HierarchyNode(FString* pNodeName);
+	class UHierarchy* Get_HierarchyNode(FString pNodeName);
 
 
 
@@ -46,10 +50,19 @@ protected:
 	void ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
-
+	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData);
+	void Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData);
 
 
 private:
 	vector<class UHierarchy*>			UHierarchyNodes;
+	FString								NodeName;
+	TArray<FPositionNormalUV>			m_Vertice;
+	TArray<uint32>						m_Indices;
+	uint32								m_NumPrimitives = 0;
+	fbxsdk::FbxMesh* m_Mesh;
+
+	bool								m_SetBones = false;
+
 #endif
 };

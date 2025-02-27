@@ -42,7 +42,7 @@ UHierarchy* UHierarchy::Create(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uin
 	//init 과정
 	{
 		//뼈이름 보관	//muzzleflash 부분의 자식이 없어서 멈추는 현상이 있음
-		NewHierarchy->m_FStringName= ANSI_TO_TCHAR(InNode->GetName());
+		NewHierarchy->m_FStringName= InNode->GetName();
 
 		//씬객체로부터 전치해서 받아올 예정
 		fbxsdk::FbxAMatrix IdentityMatrix;

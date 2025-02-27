@@ -488,7 +488,19 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 }
 void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
 {
+    uint32 ChildHierarchyNode = InNode->GetChildCount();
+    
+    //const FString NodeName = ANSI_TO_TCHAR(InNode->Get_Name());
+
     UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
+
+    const char* HierarchyName = pHierarchyNode->Get_Name();
+
+    if (InNode->GetChild(0) == nullptr)
+    {
+        return;
+    }
+
 
     //2중순환 구조 문제가 있음
 
@@ -496,9 +508,8 @@ void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pPar
     {
         UHierarchyNodes.push_back(pHierarchyNode);
 
-        FString HierarchyName= pHierarchyNode->Get_Name();
+       
 
-        uint32 ChildHierarchyNode = InNode->GetChildCount();
 
         if (ChildHierarchyNode > 0)
         {

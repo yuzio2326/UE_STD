@@ -34,7 +34,7 @@ public:
 	virtual ~UHierarchy() = default;
 
 public:
-	const FString Get_Name() const {
+	const char* Get_Name() const {
 		return m_FStringName;
 	}
 	unsigned int Get_Depth() const {
@@ -61,7 +61,7 @@ public:
 
 private:
 	//char			m_szName[MAX_PATH] = "";
-	FString			m_FStringName;
+	const char*		m_FStringName;
 	FMatrix			m_OffsetMatrix;
 	FMatrix			m_Transformation;
 	FMatrix			m_CombinedTransformation;

@@ -96,11 +96,11 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 #endif
 }
 
-UHierarchy* UFbxFactory::Get_HierarchyNode(FString pNodeName)
+UHierarchy* UFbxFactory::Get_HierarchyNode(const char* pNodeName)
 {
     auto	iter = find_if(UHierarchyNodes.begin(), UHierarchyNodes.end(), [&](UHierarchy* pNode)
         {
-            return pNode->GetName().compare(pNodeName);
+            return !strcmp(pNodeName, pNode->Get_Name());
         });
 
     if (iter == UHierarchyNodes.end())
@@ -322,12 +322,17 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 //UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, nullptr, iDepth++);
 
                 //뼈세팅
+                //만드는거 OK 됐음
                 Ready_HierarchyNodes(InNode, nullptr, iDepth);
 
-
+                UHierarchyNodes;
                 //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
-
+                //NewMeshData;
+                //NewMeshData.BonesName=
+                
+                //setup을 어떻게 하지?        NewMeshData->Bones
                 SetUp_HierarchyNodes(InNode, NewMeshData);
+
                 Ready_Animations(InNode, NewMeshData);
             }
         }
@@ -460,6 +465,7 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 NewMeshData.Indices = move(Indices);
                 NewMeshData.NumPrimitives = PolygonCount;
 
+                SetUp_HierarchyNodes(InNode, NewMeshData);
                 const int MaterialCount = Mesh->GetElementMaterialCount();
 
                 //여기에 애니메이션 및 하이어라키 과정을 넣던지 밑에 여기에 있는 과정을 넣어서 한번에 생성하던지 둘중 하나를 할것 같음
@@ -490,27 +496,20 @@ void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pPar
 {
     uint32 ChildHierarchyNode = InNode->GetChildCount();
     
-    //const FString NodeName = ANSI_TO_TCHAR(InNode->Get_Name());
-
     UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
 
     const char* HierarchyName = pHierarchyNode->Get_Name();
 
+    UHierarchyNodes.push_back(pHierarchyNode);
+    
     if (InNode->GetChild(0) == nullptr)
     {
         return;
     }
 
-
-    //2중순환 구조 문제가 있음
-
     if (pHierarchyNode != nullptr)
     {
-        UHierarchyNodes.push_back(pHierarchyNode);
-
-       
-
-
+     
         if (ChildHierarchyNode > 0)
         {
             for (uint32 i = 0; i < ChildHierarchyNode; ++i)
@@ -524,7 +523,13 @@ void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pPar
 }
 void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData)
 {
+    //mesh 를 가지고 와서 어차피 메쉬 하나만 쓸거니까 InNode에서 가지고 와도 될거 같음
+    //자기 자신 로드해서 위에 만들어 놓은 하이어라키 사용 ㄱㄱ
+    //UFbxFactory의 Get_HierarchyNode를 사용해서 BonesName를 세팅하고 mesh data의 Bones에 pushback을 하면 되지 않을까?
+    //근데 그냥 바로 생성 하자마자 pushback을 하는게 더 나은거 같기도함 위에 FMeshData에 집어 넣고 여기는 Set_OffsetMatrix관련만 가지고 세팅하면 ㄱㅊ을듯?
+
     uint32 OwnBoneNum = MeshData.BoneNumber;
+    //uint32 OwnBoneNum = InNode->GetSkeleton();
 
     FbxMesh* Mesh = InNode->GetMesh();
     if (!Mesh) return;
@@ -544,7 +549,7 @@ void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshDa
 
         FbxCluster* Cluster = Skin->GetCluster(i);
         FbxNode* BoneNode = Cluster->GetLink();
-        const FString BoneName = ANSI_TO_TCHAR(BoneNode->GetName());
+        const char* BoneName = BoneNode->GetName();
 
         UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
 
@@ -573,7 +578,7 @@ void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshDa
     if (0 == OwnBoneNum)
     {
 
-        UHierarchy* pNode = Get_HierarchyNode(MeshData.Name);
+        UHierarchy* pNode = Get_HierarchyNode(MeshData.BonesName[MeshData.BoneNumber]);
         if (nullptr == pNode)
             return;
 

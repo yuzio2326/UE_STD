@@ -22,7 +22,7 @@ struct FMeshData
 	uint32 NumPrimitives = 0;
 
 	//bool OwnedBone = false;
-	//TArray<FString> Bones;
+	TArray<const char *> BonesName;
 	//뼈
 	vector<class UHierarchy*>	Bones;
 	uint32 BoneNumber = 0;
@@ -39,7 +39,8 @@ public:
 	virtual bool FactoryCanImport(const FString& Filename) override;
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
-	class UHierarchy* Get_HierarchyNode(FString pNodeName);
+	//PlayAnim할때 HierarchyNode 가지고와서 사용
+	class UHierarchy* Get_HierarchyNode(const char* pNodeName);
 
 
 
@@ -52,7 +53,7 @@ protected:
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
 	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData);
 	void Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData);
-
+	
 
 private:
 	vector<class UHierarchy*>			UHierarchyNodes;

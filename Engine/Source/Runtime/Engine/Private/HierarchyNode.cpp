@@ -48,6 +48,7 @@ UHierarchy* UHierarchy::Create(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uin
 		fbxsdk::FbxAMatrix IdentityMatrix;
 		IdentityMatrix.SetIdentity();
 		memcpy(&NewHierarchy->m_OffsetMatrix, &IdentityMatrix, sizeof(FbxAMatrix));
+		memcpy(&NewHierarchy->m_CombinedTransformation, &IdentityMatrix, sizeof(FbxAMatrix));
 		//XMStoreFloat4x4(&m_OffsetMatrix, XMMatrixIdentity());	같은 내용
 
 		fbxsdk::FbxAMatrix FbxTransform = InNode->EvaluateGlobalTransform();
@@ -58,12 +59,12 @@ UHierarchy* UHierarchy::Create(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uin
 		NewHierarchy->m_pParent = pParent;
 		NewHierarchy->m_iDepth = iDepth;
 
-		memcpy(&NewHierarchy->m_CombinedTransformation, &IdentityMatrix, sizeof(FbxAMatrix));
 
+		return NewHierarchy;
 		//_ASSERT(TEXT("Failed To Created : CHierarchyNode"));
 	}
 
-	return NewHierarchy;
+	
 }
 
 //Create지우고 대신 여기에 세팅중? 아니면 create에 만들까? 일단 적당히  

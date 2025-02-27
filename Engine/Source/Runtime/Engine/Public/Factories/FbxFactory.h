@@ -23,9 +23,18 @@ struct FMeshData
 
 	//bool OwnedBone = false;
 	TArray<const char *> BonesName;
+
+
 	//뼈
 	vector<class UHierarchy*>	Bones;
 	uint32 BoneNumber = 0;
+
+	//anim	만들때 사용할것들
+
+	//vector<class UAnimation*>				Animations;				사용할 애니메이션 class
+	//uint32								NumAnimations = 0;		애니메이션 갯수
+	//uint32								CurrentAnimIndex = 0;	사용중인 애니메이션의 index
+
 };
 
 //class UHierarchy;

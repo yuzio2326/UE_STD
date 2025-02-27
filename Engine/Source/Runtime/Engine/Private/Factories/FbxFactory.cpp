@@ -325,10 +325,13 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 //만드는거 OK 됐음
                 Ready_HierarchyNodes(InNode, nullptr, iDepth);
 
+                //확인용   playanim이랑 getHierarchy할때 사용
                 UHierarchyNodes;
+
+                //NewMeshData
+
                 //meshcontainer 를 만들어서 여러개의 메쉬를 로드할까 말까 고민중... 일단 하지말기
                 //NewMeshData;
-                //NewMeshData.BonesName=
                 
                 //setup을 어떻게 하지?        NewMeshData->Bones
                 SetUp_HierarchyNodes(InNode, NewMeshData);
@@ -465,7 +468,16 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 NewMeshData.Indices = move(Indices);
                 NewMeshData.NumPrimitives = PolygonCount;
 
-                SetUp_HierarchyNodes(InNode, NewMeshData);
+                UHierarchyNodes;
+
+                //bones 세팅 시점은 이쪽에
+                NewMeshData.Bones = UHierarchyNodes;
+
+                //위에 있는 내용물 가지고 메쉬랑 bones 연결해주기
+                /*여기에 setup HierarchyNodes 를 해주는게 ㄱㅊ을거 같음*/
+
+                //이후 애니메이션 데이터를 여기에서 세팅
+
                 const int MaterialCount = Mesh->GetElementMaterialCount();
 
                 //여기에 애니메이션 및 하이어라키 과정을 넣던지 밑에 여기에 있는 과정을 넣어서 한번에 생성하던지 둘중 하나를 할것 같음
@@ -502,11 +514,13 @@ void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pPar
 
     UHierarchyNodes.push_back(pHierarchyNode);
     
+    //자식노드 없으면 리턴
     if (InNode->GetChild(0) == nullptr)
     {
         return;
     }
 
+    //있으면 찾기
     if (pHierarchyNode != nullptr)
     {
      
@@ -525,11 +539,15 @@ void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshDa
 {
     //mesh 를 가지고 와서 어차피 메쉬 하나만 쓸거니까 InNode에서 가지고 와도 될거 같음
     //자기 자신 로드해서 위에 만들어 놓은 하이어라키 사용 ㄱㄱ
+    // 
     //UFbxFactory의 Get_HierarchyNode를 사용해서 BonesName를 세팅하고 mesh data의 Bones에 pushback을 하면 되지 않을까?
     //근데 그냥 바로 생성 하자마자 pushback을 하는게 더 나은거 같기도함 위에 FMeshData에 집어 넣고 여기는 Set_OffsetMatrix관련만 가지고 세팅하면 ㄱㅊ을듯?
 
     uint32 OwnBoneNum = MeshData.BoneNumber;
     //uint32 OwnBoneNum = InNode->GetSkeleton();
+
+    //uint32 OwnBoneNum = InNode;
+    MeshData.Bones = UHierarchyNodes;
 
     FbxMesh* Mesh = InNode->GetMesh();
     if (!Mesh) return;

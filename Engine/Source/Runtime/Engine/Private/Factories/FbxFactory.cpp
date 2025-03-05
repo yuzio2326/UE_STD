@@ -76,6 +76,10 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
     // 
     //근데 시간이 되긴 할까? 싶어서 일단 냅둠
 
+    /*TODO:: skeltalmesh만들고 하나만 로드하도록 하고 할당 해제 하도록 ㄱㄱ
+    * 이게 정배긴함 그러면 이걸 이렇게 만들고 나면? 
+    */
+
 
 	TObjectPtr<UStaticMesh> NewStaticMesh;
 	// Mesh 정보를 얻어온다
@@ -298,7 +302,7 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
     if (NodeAttribute != nullptr) {
         fbxsdk::FbxNodeAttribute::EType AttributeType = NodeAttribute->GetAttributeType();
 
-        FMeshData& NewMeshData = OutMeshData.emplace_back();
+        
 
         //skeleton
         if (AttributeType == fbxsdk::FbxNodeAttribute::eSkeleton)
@@ -334,9 +338,9 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                 //NewMeshData;
                 
                 //setup을 어떻게 하지?        NewMeshData->Bones
-                SetUp_HierarchyNodes(InNode, NewMeshData);
+                //SetUp_HierarchyNodes(InNode, NewMeshData);
 
-                Ready_Animations(InNode, NewMeshData);
+                //Ready_Animations(InNode, NewMeshData);    mesh에 해당 함수 만드는 작업 ㄱㄱ
             }
         }
 
@@ -461,17 +465,29 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 
             }
 
+            //시점이 mesh 만들때 만들어져야함
             if (bSuccessed) {
-
+                FMeshData& NewMeshData = OutMeshData.emplace_back();
                 NewMeshData.Name = FbxNodeName;
                 NewMeshData.Vertices = move(Vertices);
                 NewMeshData.Indices = move(Indices);
                 NewMeshData.NumPrimitives = PolygonCount;
 
+
                 UHierarchyNodes;
 
-                //bones 세팅 시점은 이쪽에
-                NewMeshData.Bones = UHierarchyNodes;
+
+                if (!UHierarchyNodes.empty())
+                {
+                    //bones 세팅 시점은 이쪽에
+                    //NewMeshData.Bones = UHierarchyNodes;
+                    //NewMeshData.BoneNumber = UHierarchyNodes.size();
+                    SetUp_HierarchyNodes(InNode, NewMeshData);  //matrix 등등 필요한것들이 있어서 이렇게 세팅
+                    NewMeshData.BoneNumber = UHierarchyNodes.size(); //뼈 갯수는 사이즈만큼 있으니까 
+                }
+
+
+
 
                 //위에 있는 내용물 가지고 메쉬랑 bones 연결해주기
                 /*여기에 setup HierarchyNodes 를 해주는게 ㄱㅊ을거 같음*/
@@ -490,14 +506,16 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 
                 //playAnim을 계속 호출할 skeletal mesh가 필요함
             }
+
+            
         }
 
     }
 
     //해당 부분 때문에 재귀함수에 2번 들어옴
-    for (uint32 i = 0; i < InNode->GetChildCount(); ++i) 
+    uint32 NodeChild = InNode->GetChildCount();
+    for (uint32 i = 0; i < NodeChild; ++i)
     {
-        uint32 ChildCount = InNode->GetChildCount();
         ExtractFbxAnim(InNode->GetChild(i), OutMeshData);
     }
 
@@ -506,36 +524,39 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 }
 void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth)
 {
-    uint32 ChildHierarchyNode = InNode->GetChildCount();
+
+    //여기에서 GetChildCount로 자식 하나하나마다 다 UHierarchy를 만들어 줬었어가지고 나중에 csene에서 destroy 할때
+    //해당 부분에 남아있는 UHierarchy때문에 destroy 가 안됌...
+
+    //uint32 ChildHierarchyNode = InNode->GetChildCount();
+
+    if (!InNode)
+        return;
     
     UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
+    if (nullptr == pHierarchyNode)
+        return;
 
     const char* HierarchyName = pHierarchyNode->Get_Name();
 
     UHierarchyNodes.push_back(pHierarchyNode);
-    
-    //자식노드 없으면 리턴
-    if (InNode->GetChild(0) == nullptr)
-    {
-        return;
-    }
+
+    uint32 childCount = InNode->GetChildCount();
 
     //있으면 찾기
     if (pHierarchyNode != nullptr)
     {
      
-        if (ChildHierarchyNode > 0)
+        for (uint32 i = 0; i < childCount; ++i)
         {
-            for (uint32 i = 0; i < ChildHierarchyNode; ++i)
-            {
-                //재귀함수로 돌려서 자식 노드 끝가지 만들기
-                Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
-            }
+            //재귀함수로 돌려서 자식 노드 끝가지 만들기
+            Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
         }
+
     }
 
 }
-void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData)
+void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData& MeshData)
 {
     //mesh 를 가지고 와서 어차피 메쉬 하나만 쓸거니까 InNode에서 가지고 와도 될거 같음
     //자기 자신 로드해서 위에 만들어 놓은 하이어라키 사용 ㄱㄱ
@@ -543,67 +564,124 @@ void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshDa
     //UFbxFactory의 Get_HierarchyNode를 사용해서 BonesName를 세팅하고 mesh data의 Bones에 pushback을 하면 되지 않을까?
     //근데 그냥 바로 생성 하자마자 pushback을 하는게 더 나은거 같기도함 위에 FMeshData에 집어 넣고 여기는 Set_OffsetMatrix관련만 가지고 세팅하면 ㄱㅊ을듯?
 
-    uint32 OwnBoneNum = MeshData.BoneNumber;
-    //uint32 OwnBoneNum = InNode->GetSkeleton();
+    fbxsdk::FbxNodeAttribute* NodeAttribute = InNode->GetNodeAttribute();
+    if (NodeAttribute != nullptr) {
+        fbxsdk::FbxNodeAttribute::EType AttributeType = NodeAttribute->GetAttributeType();
+        if (AttributeType == fbxsdk::FbxNodeAttribute::eMesh) {
+            const FString FbxNodeName = ANSI_TO_TCHAR(InNode->GetName());
+            FbxMesh* Mesh = InNode->GetMesh();
+            if (!Mesh) return;
+            FbxSkin* Skin = static_cast<FbxSkin*>(Mesh->GetDeformer(0, FbxDeformer::eSkin));
+            if (!Skin) return;
 
-    //uint32 OwnBoneNum = InNode;
-    MeshData.Bones = UHierarchyNodes;
+            uint32 OwnBoneNum = UHierarchyNodes.size();
 
-    FbxMesh* Mesh = InNode->GetMesh();
-    if (!Mesh) return;
+            for (uint32 i = 0; i < OwnBoneNum; ++i)
+            {
 
-    FbxSkin* Skin = static_cast<FbxSkin*>(Mesh->GetDeformer(0, FbxDeformer::eSkin));
-    if (!Skin) return;
+                FbxCluster* Cluster = Skin->GetCluster(i);
+                FbxNode* BoneNode = Cluster->GetLink();
+                const char* BoneName = BoneNode->GetName();
+                UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
 
+                // Offset Matrix 변환     FBX는 변환 행렬을 직접 가져와야 함  ㅈㄴ 귀찮네
+                FbxAMatrix fbxOffsetMatrix;
+                
+                FbxAMatrix ClusterOffsetMatrix= Cluster->GetTransformLinkMatrix(fbxOffsetMatrix);
+
+                // FBX 행렬을 Unreal FMatrix로 변환
+                FMatrix OffsetMatrix;
+                for (int r = 0; r < 4; r++)
+                    for (int c = 0; c < 4; c++)
+                        OffsetMatrix.m[r][c] = static_cast<float>(ClusterOffsetMatrix[r][c]);
+                
+                //뼈 세팅한뒤 매쉬에도 세팅
+                pHierarchyNode->Set_OffsetMatrix(XMMatrixTranspose(XMLoadFloat4x4(&OffsetMatrix)));
+                MeshData.Bones.push_back(pHierarchyNode);
+                FMatrix FCheckMatrix = MeshData.Bones[i]->Get_OffSetMatrix();
+
+            }
+
+            if (0 == OwnBoneNum)
+            {
+                UHierarchy* pNode = Get_HierarchyNode(MeshData.BonesName[MeshData.BoneNumber]);
+                
+                if (nullptr == pNode)
+                    return ;
+
+                MeshData.BoneNumber = 1;
+
+                MeshData.Bones.push_back(pNode);
+
+            }
+            
+
+        }
+    }
+    
+    //For Check
+    //MeshData.Bones = UHierarchyNodes;
+    //MeshData.BoneNumber = UHierarchyNodes.size();
+
+
+    //FbxMesh* Mesh = InNode->GetMesh();
+    //if (!Mesh) return;
+
+    //FbxSkin* Skin = static_cast<FbxSkin*>(Mesh->GetDeformer(0, FbxDeformer::eSkin));
+    //if (!Skin) return;
+
+#pragma region bone_setting_oldcodes
 
     // 메시에 영향을 주는 뼈들을 순회 하고
-    for (uint32 i = 0; i < OwnBoneNum; ++i)
-    {
-        //뼈를 가지고오고
-        //aiBone* pAIBone = MeshData.Bones[i];
+    //for (uint32 i = 0; i < OwnBoneNum; ++i)
+    //{
+    //    //뼈를 가지고오고
+    //    //aiBone* pAIBone = MeshData.Bones[i];
+    //    UHierarchy* Meshbone = MeshData.Bones[i];
 
-        //뼈이름 가져오기
-        //UHierarchy* pHierarchyNode = Get_HierarchyNode(pAIBone->mName.data);
+    //    //뼈이름 가져오기
+    //    UHierarchy* pHierarchyNode = Get_HierarchyNode(Meshbone->Get_Name());
 
-        FbxCluster* Cluster = Skin->GetCluster(i);
-        FbxNode* BoneNode = Cluster->GetLink();
-        const char* BoneName = BoneNode->GetName();
+    //    //FbxCluster* Cluster = Skin->GetCluster(i);
+    //    //FbxNode* BoneNode = Cluster->GetLink();
+    //    //const char* BoneName = BoneNode->GetName();
 
-        UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
-
-
-        //FMatrix			OffsetMatrix;
-        //memcpy(&OffsetMatrix, &pAIBone->mOffsetMatrix, sizeof(FMatrix));
-
-        // Offset Matrix 변환     FBX는 변환 행렬을 직접 가져와야 함  ㅈㄴ 귀찮네
-        FbxAMatrix fbxOffsetMatrix;
-        Cluster->GetTransformLinkMatrix(fbxOffsetMatrix);
-
-        // FBX 행렬을 Unreal FMatrix로 변환
-        FMatrix OffsetMatrix;
-        for (int r = 0; r < 4; r++)
-            for (int c = 0; c < 4; c++)
-                OffsetMatrix.m[r][c] = static_cast<float>(fbxOffsetMatrix[r][c]);
+    //    //UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
 
 
-        //뼈 세팅한뒤 매쉬에도 세팅
-        pHierarchyNode->Set_OffsetMatrix(XMMatrixTranspose(XMLoadFloat4x4(&OffsetMatrix)));
+    //    //FMatrix			OffsetMatrix;
+    //    //memcpy(&OffsetMatrix, &pAIBone->mOffsetMatrix, sizeof(FMatrix));
 
-        MeshData.Bones.push_back(pHierarchyNode);
+    //    // Offset Matrix 변환     FBX는 변환 행렬을 직접 가져와야 함  ㅈㄴ 귀찮네
+    //    FbxAMatrix fbxOffsetMatrix;
+    //    //Cluster->GetTransformLinkMatrix(fbxOffsetMatrix);
 
-    }
+    //    // FBX 행렬을 Unreal FMatrix로 변환
+    //    FMatrix OffsetMatrix;
+    //    for (int r = 0; r < 4; r++)
+    //        for (int c = 0; c < 4; c++)
+    //            OffsetMatrix.m[r][c] = static_cast<float>(fbxOffsetMatrix[r][c]);
 
-    if (0 == OwnBoneNum)
-    {
 
-        UHierarchy* pNode = Get_HierarchyNode(MeshData.BonesName[MeshData.BoneNumber]);
-        if (nullptr == pNode)
-            return;
+    //    //뼈 세팅한뒤 매쉬에도 세팅
+    //    pHierarchyNode->Set_OffsetMatrix(XMMatrixTranspose(XMLoadFloat4x4(&OffsetMatrix)));
 
-        OwnBoneNum = 1;
+    //    //MeshData.Bones.push_back(pHierarchyNode);
 
-        MeshData.Bones.push_back(pNode);
-    }
+    //}
+
+    //if (0 == OwnBoneNum)
+    //{
+
+    //    UHierarchy* pNode = Get_HierarchyNode(MeshData.BonesName[MeshData.BoneNumber]);
+    //    if (nullptr == pNode)
+    //        return;
+
+    //    OwnBoneNum = 1;
+
+    //    MeshData.Bones.push_back(pNode);
+    //}
+#pragma endregion
 
 }
 

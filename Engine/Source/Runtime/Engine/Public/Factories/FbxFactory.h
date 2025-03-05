@@ -22,6 +22,8 @@ struct FMeshData
 	uint32 NumPrimitives = 0;
 
 	//bool OwnedBone = false;
+	
+	//안쓸거 같음
 	TArray<const char *> BonesName;
 
 
@@ -60,7 +62,7 @@ protected:
 	void ExtractFbx(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& OutMeshData);
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
-	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData MeshData);
+	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData& MeshData);
 	void Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData);
 	
 

@@ -1,6 +1,5 @@
 #pragma once
 #include "CoreMinimal.h"
-#include "HierarchyNode.generated.h"
 //struct aiNode
 //{
 //	//ASSIMP 구성중 하나 언리얼로 포팅 하려면 해당 요소의 언리얼 함수를 찾아서 만들어야함
@@ -23,10 +22,9 @@
 class UFbxFactory;
 
 
-UCLASS()
-class UHierarchy : public UObject
+class UHierarchy
 {
-	GENERATED_BODY()
+	//GENERATED_BODY()
 	//월드 상에 존재해야 하니 일단 UObject 안에 박아놓고
 
 public:
@@ -34,10 +32,10 @@ public:
 	virtual ~UHierarchy() = default;
 
 public:
-	const char* Get_Name() const {
+	FString Get_Name() const {
 		return m_FStringName;
 	}
-	unsigned int Get_Depth() const {
+	uint32 Get_Depth() const {
 		return m_iDepth;
 	}
 
@@ -61,7 +59,7 @@ public:
 
 private:
 	//char			m_szName[MAX_PATH] = "";
-	const char*		m_FStringName;
+	FString			m_FStringName;
 	FMatrix			m_OffsetMatrix;
 	FMatrix			m_Transformation;
 	FMatrix			m_CombinedTransformation;

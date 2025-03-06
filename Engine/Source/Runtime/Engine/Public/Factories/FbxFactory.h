@@ -24,7 +24,7 @@ struct FMeshData
 	//bool OwnedBone = false;
 	
 	//안쓸거 같음
-	TArray<const char *> BonesName;
+	TArray<FString> BonesName;
 
 
 	//뼈
@@ -51,7 +51,7 @@ public:
 	virtual TObjectPtr<UObject> FactoryCreateFile(const FName InName, const FString& InFileName, const TCHAR* Params) override;
 
 	//PlayAnim할때 HierarchyNode 가지고와서 사용
-	class UHierarchy* Get_HierarchyNode(const char* pNodeName);
+	class UHierarchy* Get_HierarchyNode(FString pNodeName);
 
 
 

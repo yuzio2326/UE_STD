@@ -100,11 +100,13 @@ TObjectPtr<UObject> UFbxFactory::FactoryCreateFile(const FName InName, const FSt
 #endif
 }
 
-UHierarchy* UFbxFactory::Get_HierarchyNode(const char* pNodeName)
+UHierarchy* UFbxFactory::Get_HierarchyNode(FString pNodeName)
 {
     auto	iter = find_if(UHierarchyNodes.begin(), UHierarchyNodes.end(), [&](UHierarchy* pNode)
         {
-            return !strcmp(pNodeName, pNode->Get_Name());
+            if (pNodeName == pNode->Get_Name()) { return true; }
+
+            //return !strcmp(pNodeName, pNode->Get_Name());
         });
 
     if (iter == UHierarchyNodes.end())
@@ -313,6 +315,7 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                // skeleton 유무 확인 이후 Create skeleton 및 anima setting
             if (m_SetBones == false)
             {
+                //UHierarchyNodes.clear();
                 m_SetBones = true;
                 // Bone 정보 추출
                 fbxsdk::FbxSkeleton* Skeleton = static_cast<fbxsdk::FbxSkeleton*>(InNode->GetNodeAttribute());
@@ -327,6 +330,7 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 
                 //뼈세팅
                 //만드는거 OK 됐음
+                
                 Ready_HierarchyNodes(InNode, nullptr, iDepth);
 
                 //확인용   playanim이랑 getHierarchy할때 사용
@@ -346,8 +350,9 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
 
         //mesh
         if (AttributeType == fbxsdk::FbxNodeAttribute::eMesh) {
-            const FString FbxNodeName = ANSI_TO_TCHAR(InNode->GetName());
-            E_LOG(Log, TEXT("ExtractFbx Mesh: {}"), FbxNodeName);
+            string tmp = InNode->GetName();
+            const FString FbxNodeName = FString(tmp.begin(), tmp.end());
+            //E_LOG(Log, TEXT("ExtractFbx Mesh: {}"), FbxNodeName);
 
             fbxsdk::FbxMesh* Mesh = static_cast<fbxsdk::FbxMesh*>(NodeAttribute);
             _ASSERT(Mesh);
@@ -484,6 +489,18 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                     //NewMeshData.BoneNumber = UHierarchyNodes.size();
                     SetUp_HierarchyNodes(InNode, NewMeshData);  //matrix 등등 필요한것들이 있어서 이렇게 세팅
                     NewMeshData.BoneNumber = UHierarchyNodes.size(); //뼈 갯수는 사이즈만큼 있으니까 
+
+                    //delete UHierarchyNodes;
+
+                    for (auto& pHierarchyNode : UHierarchyNodes)
+                        pHierarchyNode = nullptr;
+                    //UHierarchyNodes.resize(0);//clear로 하면 오류가 나니까 
+
+                    //UHierarchyNodes.clear();    //다 사용한거 clear 나중에 알아서 clear함 굳이 할필요 없음
+
+
+                    m_SetBones = false;         //bone setting끝났으니 false로 반환
+
                 }
 
 
@@ -529,28 +546,40 @@ void UFbxFactory::Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pPar
     //해당 부분에 남아있는 UHierarchy때문에 destroy 가 안됌...
 
     //uint32 ChildHierarchyNode = InNode->GetChildCount();
+    //UFbxFactory가 중복이라 이전에 만들어 놓았던 UHierarchyNodes를 가지고와서  pushback하고 있음
 
     if (!InNode)
         return;
     
-    UHierarchy* pHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
-    if (nullptr == pHierarchyNode)
+    UHierarchy* pCreateHierarchyNode = UHierarchy::Create(InNode, pParent, iDepth++);
+    if (nullptr == pCreateHierarchyNode)
         return;
 
-    const char* HierarchyName = pHierarchyNode->Get_Name();
+    FString HierarchyName = pCreateHierarchyNode->Get_Name();
+    
+    //for (auto& pHierarchyNode : UHierarchyNodes)
+    //{
+    //    if (pHierarchyNode == nullptr)
+    //    {
+    //        //여기에 넣을까 고민중..
+    //    }
+    //}
 
-    UHierarchyNodes.push_back(pHierarchyNode);
+    
+    
+
+    UHierarchyNodes.push_back(pCreateHierarchyNode);
 
     uint32 childCount = InNode->GetChildCount();
 
     //있으면 찾기
-    if (pHierarchyNode != nullptr)
+    if (pCreateHierarchyNode != nullptr)
     {
      
         for (uint32 i = 0; i < childCount; ++i)
         {
             //재귀함수로 돌려서 자식 노드 끝가지 만들기
-            Ready_HierarchyNodes(InNode->GetChild(i), pHierarchyNode, iDepth);
+            Ready_HierarchyNodes(InNode->GetChild(i), pCreateHierarchyNode, iDepth);
         }
 
     }
@@ -581,7 +610,8 @@ void UFbxFactory::SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData& MeshD
 
                 FbxCluster* Cluster = Skin->GetCluster(i);
                 FbxNode* BoneNode = Cluster->GetLink();
-                const char* BoneName = BoneNode->GetName();
+                string temp = BoneNode->GetName();
+                FString BoneName = FString(temp.begin(), temp.end());
                 UHierarchy* pHierarchyNode = Get_HierarchyNode(BoneName);
 
                 // Offset Matrix 변환     FBX는 변환 행렬을 직접 가져와야 함  ㅈㄴ 귀찮네

@@ -495,7 +495,6 @@ void UFbxFactory::ExtractFbxAnim(fbxsdk::FbxNode* InNode, TArray<FMeshData>& Out
                     for (auto& pHierarchyNode : UHierarchyNodes)
                         pHierarchyNode = nullptr;
                     //UHierarchyNodes.resize(0);//clear로 하면 오류가 나니까 
-
                     //UHierarchyNodes.clear();    //다 사용한거 clear 나중에 알아서 clear함 굳이 할필요 없음
 
 
@@ -719,6 +718,11 @@ void UFbxFactory::Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData)
 {
     //임시 설정 X상태입니다
 
+
+}
+
+void UFbxFactory::Safe_Release()
+{
 
 }
 

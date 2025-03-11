@@ -64,7 +64,7 @@ protected:
 	void Ready_HierarchyNodes(fbxsdk::FbxNode* InNode, UHierarchy* pParent, uint32 iDepth);
 	void SetUp_HierarchyNodes(fbxsdk::FbxNode* InNode, FMeshData& MeshData);
 	void Ready_Animations(fbxsdk::FbxNode* InNode, FMeshData MeshData);
-	
+	void Safe_Release();
 
 private:
 	vector<class UHierarchy*>			UHierarchyNodes;
